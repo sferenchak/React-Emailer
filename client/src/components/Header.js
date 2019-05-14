@@ -8,7 +8,7 @@ export default class Header extends Component {
 					<a href='#' className='brand-logo'>
 						React-Emailer
 					</a>
-					<ul id='nav-mobile' className='right hide-on-med-and-down'>
+					<ul id='nav-mobile' className='right hide-on-small-and-down'>
 						<li>
 							<a href='sass.html'>Login with Google</a>
 						</li>
