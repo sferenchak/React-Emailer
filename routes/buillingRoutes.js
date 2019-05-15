@@ -10,10 +10,14 @@ module.exports = app => {
 			description: '$5 for 5 credits',
 			source: req.body.id
 		});
+		// check for successful charge
+		if (charge.outcome.type === 'authorized') {
+			req.user.credits += 5;
+			const user = await req.user.save();
 
-		req.user.credits += 5;
-		const user = await req.user.save();
-
-		res.send(user);
+			res.send(user);
+		} else {
+			res.send({ error: charge.outcome.seller_message });
+		}
 	});
 };
