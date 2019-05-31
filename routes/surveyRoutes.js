@@ -10,26 +10,42 @@ const surveyTemplate = require('../services/emailTemplates/surveyTemplate');
 const Survey = mongoose.model('surveys');
 
 module.exports = app => {
-	app.get('/api/surveys/thanks', (req, res) => {
+	app.get('/api/surveys/:surveyId/:choice', (req, res) => {
 		res.send('Thanks for voting!');
 	});
 
 	app.post('/api/surveys/webhooks', (req, res) => {
-		const events = req.body.map(({ url, email }) => {
-			const pathname = new URL(url).pathname;
-			const p = new Path('/api/surveys/:surveyId/:choice');
-			const match = p.test(pathname);
-			if (match) {
-				return { email, surveyId: match.surveyId, choice: match.choice };
-			}
-		});
+		const p = new Path('/api/surveys/:surveyId/:choice');
 
-		const filteredEvents = events.filter(event => event);
-		const uniqueEvents = _.uniqBy(filteredEvents, 'email', 'surveyId');
+		_.chain(req.body)
+			.filter(({ event }) => event === 'click') // Filter out non-'click' events
+			.map(({ url, email }) => {
+				// extract data from url
+				const match = p.test(new URL(url).pathname);
+				if (match) {
+					return { email, surveyId: match.surveyId, choice: match.choice };
+				}
+			})
+			.compact() // remove undefined values from array
+			.uniqBy('email', 'surveyId') // remove duplicates
+			.each(({ surveyId, email, choice }) => {
+				Survey.updateOne(
+					{
+						_id: surveyId,
+						recipients: {
+							$elemMatch: { email: email, responded: false }
+						}
+					},
+					{
+						$inc: { [choice]: 1 },
+						$set: { 'recipients.$.responded': true },
+						lastResponded: new Date()
+					}
+				).exec();
+			})
+			.value();
 
-		console.log(uniqueEvents);
-
-		res.send({});
+		res.send({}); // Send a blank object as a response to let SendGrid know we received the request
 	});
 
 	app.post('/api/surveys', requireLogin, requireCredits, async (req, res) => {
