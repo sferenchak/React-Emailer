@@ -10,10 +10,21 @@ const surveyTemplate = require('../services/emailTemplates/surveyTemplate');
 const Survey = mongoose.model('surveys');
 
 module.exports = app => {
+	// Survey index route to list all surveys created by the current user
+	app.get('/api/surveys', requireLogin, async (req, res) => {
+		const surveys = await Survey.find({ _user: req.user.id }).select({
+			recipients: false
+		});
+
+		res.send(surveys);
+	});
+
+	// Route for users that responded to a survey
 	app.get('/api/surveys/:surveyId/:choice', (req, res) => {
 		res.send('Thanks for voting!');
 	});
 
+	// Webhook route to receive click event data from SendGrid
 	app.post('/api/surveys/webhooks', (req, res) => {
 		const p = new Path('/api/surveys/:surveyId/:choice');
 
@@ -48,6 +59,7 @@ module.exports = app => {
 		res.send({}); // Send a blank object as a response to let SendGrid know we received the request
 	});
 
+	// Create survey route
 	app.post('/api/surveys', requireLogin, requireCredits, async (req, res) => {
 		const { title, subject, body, recipients } = req.body;
 
@@ -60,7 +72,6 @@ module.exports = app => {
 			dateSent: Date.now()
 		});
 
-		// Great place to send an email
 		const mailer = new Mailer(survey, surveyTemplate(survey));
 		try {
 			await mailer.send();
