@@ -19,8 +19,12 @@ export class SurveyList extends Component {
 						</p>
 					</div>
 					<div className='card-action'>
-						<a>Yes: {survey.yes}</a>
-						<a>No: {survey.no}</a>
+						<span className='orange-text'>
+							<strong>Yes: {survey.yes}</strong>
+						</span>
+						<span className='orange-text right'>
+							<strong>No: {survey.no}</strong>
+						</span>
 					</div>
 				</div>
 			);
